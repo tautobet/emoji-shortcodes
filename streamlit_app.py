@@ -25,7 +25,7 @@ def fetch_emojis():
 def strike_details():
     # live_matches = Utils.sort_json(Utils.get_live_matches_1xbet(), "time_match")
     live_matches = utils.sort_json(
-        utils.read_json_w_file_path(f'{CODE_HOME}/matches.json'),
+        utils.read_json_w_file_path(f'{CODE_HOME}/emoji-shortcodes/matches.json'),
         "time_match"
     )
     df = pd.DataFrame(
