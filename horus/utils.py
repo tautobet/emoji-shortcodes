@@ -1,5 +1,5 @@
+import os
 import json
-import uuid
 import hashlib
 import base64
 import re
@@ -7,7 +7,9 @@ import math
 # import bet
 from datetime import datetime
 # from enums import BetStatuses, Game
+import horus.apis as apis
 from dateutil.parser import parse, parserinfo
+from horus.config import X8_LIVE_FOOTBALL, TEMP_FOLDER
 
 
 class MyParser(parserinfo):
@@ -292,120 +294,121 @@ def is_date(string, fuzzy=True):
 #                 tem_m.update({i: m.get(i)})
 #         new_matches.append(tem_m)
 #     return new_matches
-#
-#
-# def recorrect_url(url):
-#     rep = {"ö": "o", "ä": "a", "ü": "u", "ß": "s", "ó": "o", "í": "i", "é": "e", "è": "e", "т": "t"}
-#     # use these three lines to do the replacement
-#     rep = dict((re.escape(k), v) for k, v in rep.items())
-#     # Python 3 renamed dict.iteritems to dict.items so use rep.items() for latest versions
-#     pattern = re.compile("|".join(rep.keys()))
-#     return pattern.sub(lambda m: rep[re.escape(m.group(0))], url)
-#
-#
-# def matches_data(json_response):
-#     if json_response and json_response['Value']:
-#         return json_response['Value']
-#     return []
-#
-#
-# def extract_matches_info(data):
-#     ori_dict = matches_data(data)
-#     new_dict = []
-#     map_key = {
-#         'I'       : 'match_id',
-#         'SC.CP'   : 'half',
-#         'SC.TS'   : 'time_second',
-#         'LI'      : 'league_id',
-#         'LE'      : 'league',
-#         'O1E'     : 'team1',
-#         'O2E'     : 'team2',
-#         'SC.FS.S1': 'team1_score',
-#         'SC.FS.S2': 'team2_score',
-#         'SC.I'    : 'penalties',  # 'Videoreview' info
-#         'SC.ST'   : 'main_info',
-#         'AE'      : 'games'
-#     }
-#     for o in ori_dict:
-#         # Skip amateur, indoor, short football
-#         if o.get('CID') == 1 and 'MIO' in o:
-#             # MaF: Match formats that are different with normal football match, e.g 2x5
-#             if 'MaF' not in o['MIO']:
-#                 match = {}
-#                 for k in map_key:
-#                     if '.' in k:
-#                         ak = re.split(r"[.]", k)
-#                         value = o
-#                         for e in ak:
-#                             value = value.get(e)
-#                     else:
-#                         value = o.get(k)
-#                     if map_key.get(k) == 'penalties':
-#                         match[map_key.get(k)] = value or None
-#                     else:
-#                         match[map_key.get(k)] = value or 0
-#                 # Add current time of the match
-#                 tm = convert_timestamp_to_timematch(match.get('time_second'))
-#                 match['time_match'] = tm
-#                 league_name = remove_special_str_excepted_spaces(match.get('league').lower())
-#                 # Add prediction from games obj - AE.ME
-#                 match['prediction'] = 0
-#                 match['cur_prediction'] = 0
-#                 games = match.get('games')
-#                 # Check if 'games' key exists in 'match' and it is of list type
-#                 if isinstance(games, list):
-#
-#                     # Loop through each element of the list
-#                     for game in games:
-#
-#                         # Check if the game dictionary contains keys 'G' and 'ME'
-#                         if all(key in game for key in ['G', 'ME']):
-#
-#                             # Check if the value of the 'G' key is 17
-#                             if game.get('G') == 17:
-#
-#                                 # Loop through each element of 'ME' list
-#                                 for cg in game.get('ME'):
-#
-#                                     # Check if the dictionary 'cg' has keys 'CE', 'G', 'T', and 'P'
-#                                     if all(key in cg for key in ['CE', 'G', 'T', 'P']):
-#
-#                                         # Check if the 'CE', 'G', and 'T' keys have expected values
-#                                         if cg.get('CE') == 1 and cg.get('G') == 17 and cg.get('T') == 9:
-#
-#                                             time_sec = match.get('time_second')
-#                                             cur_prediction = cg.get('P')
-#                                             # If match appeared before first 10 minutes, prediction is good to consider
-#                                             if time_sec <= 600:
-#                                                 # Calculate the new prediction value and store it in 'prediction' key
-#                                                 match['prediction'] = cur_prediction
-#
-#                                             # Store 'P' value in 'cur_prediction' key
-#                                             match['cur_prediction'] = cur_prediction
-#                 match.pop('games', None)
-#
-#                 # Red card info
-#                 main_info = match.get('main_info')[0].get('Value') if match.get('main_info') else None
-#                 if isinstance(main_info, list):
-#                     # for mi in main_info:
-#                     #     if mi.get('Key') == 'IRedCard1' and mi.get('Value') != "0":
-#                     #         match['team1_redcard'] = mi.get('Value')
-#                     #     if mi.get('Key') == 'IRedCard2' and mi.get('Value') != "0":
-#                     #         match['team2_redcard'] = mi.get('Value')
-#                     for mi in main_info:
-#                         if mi.get('ID') == 71:  # 71 is read card info
-#                             match['team1_redcard'] = mi.get('S1')
-#                             match['team2_redcard'] = mi.get('S2')
-#                 match.pop('main_info', None)
-#
-#                 # Add match's URL
-#                 match['url'] = recorrect_url(
-#                     f"{onexbet_live_url}/{match.get('league_id')}-{league_name}/{match.get('match_id')}")
-#
-#                 new_dict.append(match)
-#     return new_dict
-#
-#
+
+
+def recorrect_url(url):
+    rep = {"ö": "o", "ä": "a", "ü": "u", "ß": "s", "ó": "o", "í": "i", "é": "e", "è": "e", "т": "t"}
+    # use these three lines to do the replacement
+    rep = dict((re.escape(k), v) for k, v in rep.items())
+    # Python 3 renamed dict.iteritems to dict.items so use rep.items() for latest versions
+    pattern = re.compile("|".join(rep.keys()))
+    return pattern.sub(lambda m: rep[re.escape(m.group(0))], url)
+
+
+def matches_data(json_response):
+    if json_response and json_response['Value']:
+        return json_response['Value']
+    return []
+
+
+def extract_matches_info(data):
+    ori_dict = matches_data(data)
+    new_dict = []
+    map_key = {
+        'I'       : 'match_id',
+        'SC.CP'   : 'half',
+        'SC.TS'   : 'time_second',
+        'LI'      : 'league_id',
+        'LE'      : 'league',
+        'O1E'     : 'team1',
+        'O2E'     : 'team2',
+        'SC.FS.S1': 'team1_score',
+        'SC.FS.S2': 'team2_score',
+        'SC.I'    : 'penalties',  # 'Videoreview' info
+        'SC.ST'   : 'main_info',
+        'AE'      : 'games'
+    }
+    for o in ori_dict:
+        # Skip amateur, indoor, short football
+        if o.get('CID') == 1 and 'MIO' in o:
+            # MaF: Match formats that are different with normal football match, e.g 2x5
+            if 'MaF' not in o['MIO']:
+                match = {}
+                for k in map_key:
+                    if '.' in k:
+                        ak = re.split(r"[.]", k)
+                        value = o
+                        for e in ak:
+                            value = value.get(e)
+                    else:
+                        value = o.get(k)
+                    if map_key.get(k) == 'penalties':
+                        match[map_key.get(k)] = value or None
+                    else:
+                        match[map_key.get(k)] = value or 0
+                # Add current time of the match
+                tm = convert_timestamp_to_timematch(match.get('time_second'))
+                match['time_match'] = tm
+                league_name = remove_special_str_excepted_spaces(match.get('league').lower())
+                # Add prediction from games obj - AE.ME
+                match['prediction'] = 0
+                match['cur_prediction'] = 0
+                match['scores'] = []
+                games = match.get('games')
+                # Check if 'games' key exists in 'match' and it is of list type
+                if isinstance(games, list):
+
+                    # Loop through each element of the list
+                    for game in games:
+
+                        # Check if the game dictionary contains keys 'G' and 'ME'
+                        if all(key in game for key in ['G', 'ME']):
+
+                            # Check if the value of the 'G' key is 17
+                            if game.get('G') == 17:
+
+                                # Loop through each element of 'ME' list
+                                for cg in game.get('ME'):
+
+                                    # Check if the dictionary 'cg' has keys 'CE', 'G', 'T', and 'P'
+                                    if all(key in cg for key in ['CE', 'G', 'T', 'P']):
+
+                                        # Check if the 'CE', 'G', and 'T' keys have expected values
+                                        if cg.get('CE') == 1 and cg.get('G') == 17 and cg.get('T') == 9:
+
+                                            time_sec = match.get('time_second')
+                                            cur_prediction = cg.get('P')
+                                            # If match appeared before first 10 minutes, prediction is good to consider
+                                            if time_sec <= 600:
+                                                # Calculate the new prediction value and store it in 'prediction' key
+                                                match['prediction'] = cur_prediction
+
+                                            # Store 'P' value in 'cur_prediction' key
+                                            match['cur_prediction'] = cur_prediction
+                match.pop('games', None)
+
+                # Red card info
+                main_info = match.get('main_info')[0].get('Value') if match.get('main_info') else None
+                if isinstance(main_info, list):
+                    # for mi in main_info:
+                    #     if mi.get('Key') == 'IRedCard1' and mi.get('Value') != "0":
+                    #         match['team1_redcard'] = mi.get('Value')
+                    #     if mi.get('Key') == 'IRedCard2' and mi.get('Value') != "0":
+                    #         match['team2_redcard'] = mi.get('Value')
+                    for mi in main_info:
+                        if mi.get('ID') == 71:  # 71 is read card info
+                            match['team1_redcard'] = mi.get('S1')
+                            match['team2_redcard'] = mi.get('S2')
+                match.pop('main_info', None)
+
+                # Add match's URL
+                match['url'] = recorrect_url(
+                    f"{X8_LIVE_FOOTBALL}/{match.get('league_id')}-{league_name}/{match.get('match_id')}")
+
+                new_dict.append(match)
+    return new_dict
+
+
 # def extract_match_info(data, match_id=None, game1h_id=None, game2h_id=None):
 #     original_match = matches_data(data)
 #     map_key = {
@@ -476,12 +479,12 @@ def is_date(string, fuzzy=True):
 #     if match['2half_game_id']:
 #         match['2half_url'] = build_game_url(match['2half_game_id'], match.get('league_id'), league_name)
 #     return match
-#
-#
-# def build_game_url(match_id, league_id, league_name):
-#     return f"{onexbet_live_url}/{league_id}-{league_name}/{match_id}"
-#
-#
+
+
+def build_game_url(match_id, league_id, league_name):
+    return f"{X8_LIVE_FOOTBALL}/{league_id}-{league_name}/{match_id}"
+
+
 # def extract_matches_tracking(origin_matches):
 #     new_dict = []
 #     map_key = {
@@ -502,15 +505,15 @@ def is_date(string, fuzzy=True):
 #             match[map_key.get(k)] = value or 0
 #         new_dict.append(match)
 #     return new_dict
-#
-#
-# def get_live_matches_1xbet():
-#     num_games = get_num_live_matches()
-#     res = apis.get_live_matches_1xbet(num_games)
-#     live_matches = extract_matches_info(res)
-#     return live_matches
-#
-#
+
+
+def get_live_matches_1xbet():
+    num_games = get_num_live_matches()
+    res = apis.get_live_matches_1xbet(num_games)
+    live_matches = extract_matches_info(res)
+    return live_matches
+
+
 # def get_live_match_1xbet(match_id):
 #     res = apis.get_live_match_1xbet(match_id)
 #     live_match = extract_match_info(res)
@@ -521,19 +524,19 @@ def is_date(string, fuzzy=True):
 #         if res.get('Success'):
 #             live_match = extract_match_info(res, match_id, live_match.get('1half_game_id'), live_match.get('2half_game_id'))
 #     return live_match
-#
-#
-# def get_num_live_matches(sport="Football", num_games=50):
-#     res = apis.get_number_live_sports()
-#     if res is not None:
-#         if 'Value' in res:
-#             sports = res.get('Value')
-#             for s in sports:
-#                 if s['N'] == sport:
-#                     num_games = int(s['C']) if int(s['C']) > num_games else num_games
-#     return num_games
-#
-#
+
+
+def get_num_live_matches(sport="Football", num_games=50):
+    res = apis.get_number_live_sports()
+    if res is not None:
+        if 'Value' in res:
+            sports = res.get('Value')
+            for s in sports:
+                if s['N'] == sport:
+                    num_games = int(s['C']) if int(s['C']) > num_games else num_games
+    return num_games
+
+
 # def get_live_match_ids():
 #     ids = []
 #     live_matches = get_live_matches_1xbet()
@@ -647,18 +650,18 @@ def read_json_w_file_path(file_path):
 #         json.dump({}, outfile)
 #     outfile.close()
 #     return data
-#
-#
-# def write_json(data):
-#     write_json_w_path(data, f'{config.TEMP_FOLDER}/matches.json')
-#
-#
-# def write_json_w_path(data, file_path):
-#     with open(file_path, 'w') as outfile:
-#         json.dump(data, outfile)
-#     outfile.close()
-#
-#
+
+
+def write_json(data):
+    write_json_w_path(data, f'{TEMP_FOLDER}/matches.json')
+
+
+def write_json_w_path(data, file_path):
+    with open(file_path, 'w') as outfile:
+        json.dump(data, outfile)
+    outfile.close()
+
+
 # def insert_items_json_w_path(items, file_path):
 #     data = read_json_w_file_path(file_path) or []
 #     for i in items:
@@ -769,28 +772,28 @@ def read_json_w_file_path(file_path):
 #
 # def convert_uptotime_to_seconds(up_to_time):
 #     return round(up_to_time) * 60
-#
-#
-# def convert_timestamp_to_timematch(timestamp):
-#     ctm = str(round(divmod(timestamp, 60)[0])).zfill(2)
-#     cts = str(round(divmod(timestamp, 60)[1])).zfill(2)
-#     ct = f"{ctm}:{cts}"
-#     return ct
-#
-#
-# def remove_special_str_excepted_spaces(league_str):
-#     final_str = ""
-#     for character in league_str:
-#         if character == " ":
-#             # checking character is space and if yes concat
-#             final_str = final_str + character
-#         else:
-#             if character.isalnum():
-#                 final_str = final_str + character
-#     final_str = final_str.replace(" ", "-").replace("é", "e")
-#     return final_str
-#
-#
+
+
+def convert_timestamp_to_timematch(timestamp):
+    ctm = str(round(divmod(timestamp, 60)[0])).zfill(2)
+    cts = str(round(divmod(timestamp, 60)[1])).zfill(2)
+    ct = f"{ctm}:{cts}"
+    return ct
+
+
+def remove_special_str_excepted_spaces(league_str):
+    final_str = ""
+    for character in league_str:
+        if character == " ":
+            # checking character is space and if yes concat
+            final_str = final_str + character
+        else:
+            if character.isalnum():
+                final_str = final_str + character
+    final_str = final_str.replace(" ", "-").replace("é", "e")
+    return final_str
+
+
 # def run_bash_script_file(file_path):
 #     from subprocess import call
 #     with open(file_path, 'rb') as file:
