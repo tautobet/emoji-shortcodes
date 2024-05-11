@@ -25,10 +25,9 @@ def strike_details():
 
 
 if __name__ == "__main__":
-
-    # schedule.every(10).seconds.do(strike_details)
-
-    # strike_details()
+    with st.empty():
+        # schedule.every(10).seconds.do(strike_details)
+        strike_details()
 
     # schedule with params
     # schedule.every(10).minutes.do(lambda: job('Hello ', 'world!'))
@@ -38,9 +37,9 @@ if __name__ == "__main__":
     # # schedule.every().hour.do(job)
     # # schedule.every().day.at("10:30").do(job)
 
-    while 1:
-        run_pending()
-        time.sleep(1)
+        while 1:
+            run_pending()
+            time.sleep(1)
 
 
 
