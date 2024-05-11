@@ -178,6 +178,14 @@ async def compare_matches(matches, new_matches):
     utils.write_json(new_matches)
     return new_matches
 
+
+# Begin streamlit UI
+def page_load():
+    st.set_page_config(layout="wide")
+# End
+
+
+page_load()
 with st.empty():
 
     @repeat(every(10).seconds)
