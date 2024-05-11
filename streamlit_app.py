@@ -39,7 +39,8 @@ if __name__ == "__main__":
 
     # schedule.every(10).seconds.do(strike_details)
 
-    strike_details()
+    # strike_details()
+
     # schedule with params
     # schedule.every(10).minutes.do(lambda: job('Hello ', 'world!'))
 
