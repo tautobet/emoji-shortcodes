@@ -1,10 +1,13 @@
+import os
+import time
 import streamlit as st
 import requests
 import pandas as pd
-import time
 import horus.utils as utils
 
 from schedule import every, repeat, run_pending
+
+CODE_HOME           = os.path.abspath(os.path.dirname(__file__) + '/..')
 
 @st.cache(ttl=60*60*12, allow_output_mutation=True)
 def fetch_emojis():
@@ -22,7 +25,7 @@ def fetch_emojis():
 def strike_details():
     # live_matches = Utils.sort_json(Utils.get_live_matches_1xbet(), "time_match")
     live_matches = utils.sort_json(
-        utils.read_json_w_file_path(f'/Users/trieutruong/repo/autobet/src/report/matches.json'),
+        utils.read_json_w_file_path(f'{CODE_HOME}/matches.json'),
         "time_match"
     )
     df = pd.DataFrame(
