@@ -180,7 +180,7 @@ async def compare_matches(matches, new_matches):
 
 with st.empty():
 
-    @repeat(every(15).seconds)
+    @repeat(every(10).seconds)
     def load_details():
         # live_matches = Utils.sort_json(Utils.get_live_matches_1xbet(), "time_match")
 
@@ -194,7 +194,7 @@ with st.empty():
         )
         st.table(df)
 
-    @repeat(every(10).seconds)
+    @repeat(every(30).seconds)
     def strike_details():
         last_matches = utils.read_json_w_file_path(f'{TEMP_FOLDER}/matches.json')
         live_matches = utils.get_live_matches_1xbet()
