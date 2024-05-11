@@ -136,9 +136,7 @@ async def compare_matches(matches, new_matches):
             if match['match_id'] == new_match['match_id']:
                 # Update prediction to new match
                 new_match['prediction'] = match['prediction']
-                new_match['scores'] = []
-                if 'scores' in match:
-                    new_match['scores'] = match['scores']
+                new_match['scores'] = match['scores'] or []
                 # Check if is there any score happened
                 team_score = check_scores(match, new_match)
                 if team_score != 0:
