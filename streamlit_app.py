@@ -9,38 +9,24 @@ from schedule import every, repeat, run_pending
 
 CODE_HOME           = os.path.abspath(os.path.dirname(__file__))
 
+with st.empty():
 
-@repeat(every(15).seconds)
-def strike_details():
-    # live_matches = Utils.sort_json(Utils.get_live_matches_1xbet(), "time_match")
-    live_matches = utils.sort_json(
-        utils.read_json_w_file_path(f'{CODE_HOME}/matches.json'),
-        "time_match"
-    )
-    df = pd.DataFrame(
-        data=live_matches,
-        columns=("league", "team1", "team2", "team1_score", "team2_score", "time_match", "half", "scores")
-    )
-    st.table(df)
+    @repeat(every(15).seconds)
+    def strike_details():
+        # live_matches = Utils.sort_json(Utils.get_live_matches_1xbet(), "time_match")
+        live_matches = utils.sort_json(
+            utils.read_json_w_file_path(f'{CODE_HOME}/matches.json'),
+            "time_match"
+        )
+        df = pd.DataFrame(
+            data=live_matches,
+            columns=("league", "team1", "team2", "team1_score", "team2_score", "time_match", "half", "scores")
+        )
+        st.table(df)
 
-
-if __name__ == "__main__":
-    with st.empty():
-        # schedule.every(10).seconds.do(strike_details)
-        strike_details()
-
-    # schedule with params
-    # schedule.every(10).minutes.do(lambda: job('Hello ', 'world!'))
-
-    # # schedule.every(30).seconds.do(job)
-    # # schedule.every(10).minutes.do(job)
-    # # schedule.every().hour.do(job)
-    # # schedule.every().day.at("10:30").do(job)
-
-        while 1:
-            run_pending()
-            time.sleep(1)
-
+    while 1:
+        run_pending()
+        time.sleep(1)
 
 
 
