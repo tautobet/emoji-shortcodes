@@ -39,7 +39,7 @@ python -m pytest
 2. Run Streamlit app (stapp.py)
 ```
 poetry shell
-python -m streamlit run horus/streamlit_app.py
+python -m streamlit run streamlit_app.py
 ```
    
 
