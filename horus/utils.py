@@ -9,7 +9,7 @@ from datetime import datetime
 # from enums import BetStatuses, Game
 import horus.apis as apis
 from dateutil.parser import parse, parserinfo
-from horus.config import X8_LIVE_FOOTBALL, TEMP_FOLDER
+from horus.config import X8_LIVE_FOOTBALL, X8_BASE_URL, TEMP_FOLDER
 
 
 class MyParser(parserinfo):
@@ -403,7 +403,7 @@ def extract_matches_info(data):
 
                 # Add match's URL
                 match['url'] = recorrect_url(
-                    f"{X8_LIVE_FOOTBALL}/{match.get('league_id')}-{league_name}/{match.get('match_id')}")
+                    f"{X8_BASE_URL}/{X8_LIVE_FOOTBALL}/{match.get('league_id')}-{league_name}/{match.get('match_id')}")
 
                 new_dict.append(match)
     return new_dict

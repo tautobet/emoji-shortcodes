@@ -7,8 +7,19 @@ import horus.utils as utils
 import horus.apis as apis
 
 from horus.enums import RISKS, BetTime
-from horus.config import logger, TEMP_FOLDER
+from horus.config import logger, TEMP_FOLDER, X8_BASE_URL
 from schedule import every, repeat, run_pending
+
+
+def fetch_emojis():
+    resp = requests.get(
+        'https://raw.githubusercontent.com/omnidan/node-emoji/master/lib/emoji.json')
+    json = resp.json()
+    codes, emojis = zip(*json.items())
+    return pd.DataFrame({
+        'Emojis': emojis,
+        'Shortcodes': [f':{code}:' for code in codes],
+    })
 
 
 def check_scores(old_match, new_match):
@@ -181,7 +192,12 @@ async def compare_matches(matches, new_matches):
 
 # Begin streamlit UI
 def page_load():
-    st.set_page_config(layout="wide")
+    st.set_page_config(
+        page_title="Livescore App",
+        page_icon=":soccer:",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
 # End
 
 
@@ -198,9 +214,18 @@ with st.empty():
         )
         df = pd.DataFrame(
             data=live_matches,
-            columns=("league", "team1", "team2", "team1_score", "team2_score", "time_match", "half", "scores")
+            columns=("league", "team1", "team2", "team1_score", "team2_score", "time_match", "half", "scores", "url")
         )
-        st.table(df)
+        st.dataframe(
+            df,
+            height=(len(live_matches) + 1) * 35 + 3,
+            column_config={
+                "url": st.column_config.LinkColumn(
+                    label="Match Link",
+                    display_text=f"Link"
+                )
+            }
+        )
 
     @repeat(every(30).seconds)
     def strike_details():
