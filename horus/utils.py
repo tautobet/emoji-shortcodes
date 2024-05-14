@@ -325,6 +325,7 @@ def extract_matches_info(data):
         'SC.FS.S1': 'team1_score',
         'SC.FS.S2': 'team2_score',
         'SC.I'    : 'penalties',  # 'Videoreview' info
+        'SC.S'    : 'additional_info',
         'SC.ST'   : 'main_info',
         'AE'      : 'games'
     }
@@ -400,6 +401,15 @@ def extract_matches_info(data):
                             match['team1_redcard'] = mi.get('S1')
                             match['team2_redcard'] = mi.get('S2')
                 match.pop('main_info', None)
+
+                # Additional Time
+                add_info = match.get('additional_info')
+                if isinstance(add_info, list):
+                    for ai in add_info:
+                        if ai.get('Key') == 'AddTime':
+                            match['add_time'] = ai.get('Value')
+                            break
+                match.pop('additional_info', None)
 
                 # Add match's URL
                 match['url'] = recorrect_url(
@@ -586,17 +596,17 @@ def get_num_live_matches(sport="Football", num_games=50):
 #     # Convert the final object to JSON string
 #     result = json.dumps(converted_object, indent=4)
 #     print(result)
-#
-#
-# def is_integer(n):
-#     try:
-#         float(n)
-#     except ValueError:
-#         return False
-#     else:
-#         return float(n).is_integer()
-#
-#
+
+
+def is_integer(n):
+    try:
+        float(n)
+    except ValueError:
+        return False
+    else:
+        return float(n).is_integer()
+
+
 # def is_int(n):
 #     try:
 #         return float(n).is_integer()
@@ -758,18 +768,18 @@ def write_json_w_path(data, file_path):
 #         outfile.write("")
 #     outfile.close()
 #     return data
-#
-#
-# def convert_timematch_to_seconds(time_match):
-#     if not is_integer(time_match[:2]):
-#         return 0
-#     if not is_integer(time_match[-2:]):
-#         return 0
-#     min_tm = int(time_match[:2])
-#     sec_tm = int(time_match[-2:])
-#     return min_tm * 60 + sec_tm
-#
-#
+
+
+def convert_timematch_to_seconds(time_match):
+    if not is_integer(time_match[:2]):
+        return 0
+    if not is_integer(time_match[-2:]):
+        return 0
+    min_tm = int(time_match[:2])
+    sec_tm = int(time_match[-2:])
+    return min_tm * 60 + sec_tm
+
+
 # def convert_uptotime_to_seconds(up_to_time):
 #     return round(up_to_time) * 60
 

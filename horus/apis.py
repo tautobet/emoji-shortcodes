@@ -612,12 +612,44 @@ async def get_balance():
     return None
 
 
+def get_json_sports():
+    url = "http://localhost:8080/matches"
+    payload = {}
+    try:
+        # # Start the timer
+        # start_time = time.time()
+
+        response = requests.request("GET", url, headers=headers, data=payload)
+
+        # # Calculate the elapsed time
+        # elapsed_time = time.time() - start_time
+        # logger.info(f"Elapsed Time: {elapsed_time} seconds")
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            logger.error("Result not found!")
+        else:
+            logger.error(f"Request failed with status code: {response.status_code}")
+            # Access the error message, if available
+            error_message = response.text
+            logger.error(error_message)
+        return None
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f'RequestException: {e}')
+    except ConnectionResetError:
+        logger.error('ConnectionResetError')
+
+    return None
+
+
 if __name__ == "__main__":
     # Example usage
     import asyncio
-    res = get_live_match_1xbet(499406186)
+    res = get_json_sports()
     # res = get_live_matches_1xbet(72)
     # res = asyncio.run(get_balance())
     # res = get_number_live_sports()
     # res = open_bet(495436207)
-    # print(res)
+    print(res)

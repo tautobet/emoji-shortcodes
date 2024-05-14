@@ -177,7 +177,7 @@ async def compare_matches(matches, new_matches):
                                                      team2_score, half, time_second)
 
                     # store time of the last score
-                    scores.append(time_match)
+                    scores.insert(0, time_match)
                     new_match['scores'] = scores
 
                 break
@@ -186,7 +186,8 @@ async def compare_matches(matches, new_matches):
             matches.remove(match)
     # TODO: Start bet with asyncio here, refer /async_sample.py
     await asyncio.gather(*bet_coros, *tele_coros)
-    utils.write_json(new_matches)
+    if len(new_matches) > 0:
+        utils.write_json(new_matches)
     return new_matches
 
 
@@ -203,6 +204,16 @@ def page_load():
 
 page_load()
 with st.empty():
+    def find_max_value(arr):
+        max_value = utils.convert_timematch_to_seconds(arr[0])  # Initialize max_value with the first element of the array
+        for val in arr:
+            if utils.convert_timematch_to_seconds(val) > max_value:
+                max_value = utils.convert_timematch_to_seconds(val)
+        return max_value
+
+    def color_red_column(col):
+        return ['background-color: lightgreen' if len(x) > 0 else None for x in col]
+
 
     @repeat(every(10).seconds)
     def load_details():
@@ -214,15 +225,62 @@ with st.empty():
         )
         df = pd.DataFrame(
             data=live_matches,
-            columns=("league", "team1", "team2", "team1_score", "team2_score", "time_match", "half", "scores", "url")
+            columns=(
+                "league",
+                "team1",
+                "team2",
+                "team1_score",
+                "team2_score",
+                "time_match",
+                "add_time",
+                "half",
+                "prediction",
+                "cur_prediction",
+                "scores",
+                "url")
         )
+        # df_styled = df.style.apply(color_red_column, subset=['scores'])
+        # df_styled = df.style.map(lambda x: f"background-color: {'green' if len(x) > 0 else 'red'}", subset='scores')
         st.dataframe(
             df,
             height=(len(live_matches) + 1) * 35 + 3,
             column_config={
+                "prediction": st.column_config.NumberColumn(
+                    format="%.1f",
+                    width="small"
+                ),
+                "cur_prediction": st.column_config.NumberColumn(
+                    format="%.1f",
+                    width="small"
+                ),
                 "url": st.column_config.LinkColumn(
                     label="Match Link",
-                    display_text=f"Link"
+                    display_text=f"Link",
+                    width="small"
+                ),
+                "league": st.column_config.Column(
+                    width="medium"
+                ),
+                "team1": st.column_config.Column(
+                    width="small"
+                ),
+                "team2": st.column_config.Column(
+                    width="small"
+                ),
+                "team1_score": st.column_config.Column(
+                    width="small"
+                ),
+                "team2_score": st.column_config.Column(
+                    width="small"
+                ),
+                "time_match": st.column_config.Column(
+                    width="small"
+                ),
+                "add_time": st.column_config.Column(
+                    width="small"
+                ),
+                "half": st.column_config.Column(
+                    width="small"
                 )
             }
         )
@@ -233,9 +291,10 @@ with st.empty():
         live_matches = utils.get_live_matches_1xbet()
         logger.info(f'Popular live matches: {len(live_matches)}')
 
-        # last_matches is not correct format, create last matches with live_matches
-        if not isinstance(last_matches, list):
-            utils.write_json(live_matches)
+        # # last_matches is not correct format, create last matches with live_matches
+        # if not isinstance(last_matches, list):
+        #     if len(live_matches) > 0:
+        #         utils.write_json(live_matches)
         asyncio.run(compare_matches(last_matches, live_matches))
 
 
