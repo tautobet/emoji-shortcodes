@@ -8,9 +8,9 @@ from horus.utils import get_live_matches_1xbet, get_live_match_1xbet, read_json_
 
 from horus.config import logger, TEMP_FOLDER, CODE_HOME
 from schedule import every, repeat, run_pending
-import subprocess
-
-subprocess.run(['bash', f"{CODE_HOME}/devops/deploy.sh"])
+# import subprocess
+#
+# subprocess.run(['bash', f"{CODE_HOME}/devops/deploy.sh"])
 
 
 def fetch_emojis():
@@ -146,25 +146,25 @@ with st.empty():
             }
         )
 
-    # async def delete_matches(matches):
-    #     logger.info('run deleting ended matches')
-    #     for match in matches:
-    #         res_ = get_live_match_1xbet(match.get('match_id'))
-    #         if not res_ or not res_.get('Success'):
-    #             matches.remove(match)
-    #
-    # @repeat(every(15).seconds)
-    # def fetch_matches_data():
-    #     last_matches = read_json_w_file_path(f'{TEMP_FOLDER}/matches.json')
-    #     live_matches = get_live_matches_1xbet()
-    #     if live_matches:
-    #         logger.info(f'Popular live matches: {len(live_matches)}')
-    #         asyncio.run(compare_matches(last_matches, live_matches))
-    #
-    # @repeat(every(5).minutes)
-    # def delete_ended_matches():
-    #     last_matches = read_json_w_file_path(f'{TEMP_FOLDER}/matches.json')
-    #     asyncio.run(delete_matches(last_matches))
+    async def delete_matches(matches):
+        logger.info('run deleting ended matches')
+        for match in matches:
+            res_ = get_live_match_1xbet(match.get('match_id'))
+            if not res_ or not res_.get('Success'):
+                matches.remove(match)
+
+    @repeat(every(15).seconds)
+    def fetch_matches_data():
+        last_matches = read_json_w_file_path(f'{TEMP_FOLDER}/matches.json')
+        live_matches = get_live_matches_1xbet()
+        if live_matches:
+            logger.info(f'Popular live matches: {len(live_matches)}')
+            asyncio.run(compare_matches(last_matches, live_matches))
+
+    @repeat(every(5).minutes)
+    def delete_ended_matches():
+        last_matches = read_json_w_file_path(f'{TEMP_FOLDER}/matches.json')
+        asyncio.run(delete_matches(last_matches))
 
     while 1:
         run_pending()
