@@ -3,14 +3,8 @@ import asyncio
 import streamlit as st
 import requests
 import pandas as pd
-from horus.utils import (
-    get_live_matches_1xbet,
-    get_live_match_1xbet,
-    read_json_w_file_path,
-    compare_matches,
-    convert_timematch_to_seconds,
-    sort_json
-)
+from horus.utils import get_live_matches_1xbet, get_live_match_1xbet, read_json_w_file_path, compare_matches, \
+                        convert_timematch_to_seconds, sort_json
 
 from horus.config import logger, TEMP_FOLDER
 from schedule import every, repeat, run_pending
