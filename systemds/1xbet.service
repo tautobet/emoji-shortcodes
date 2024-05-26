@@ -4,7 +4,6 @@ After=network.target
 
 [Service]
 WorkingDirectory=/mount/src/emoji-shortcodes
-#EnvironmentFile=/home/trieutruong/.pyenv/shims/pipenv
 ExecStart=/mount/src/emoji-shortcodes/.venv/bin/python fetch_matches.py
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
