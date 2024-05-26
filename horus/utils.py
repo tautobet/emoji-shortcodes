@@ -1,15 +1,12 @@
-import os
 import json
-import hashlib
-import base64
 import re
 import math
-# import bet
+import asyncio
 from datetime import datetime
-# from enums import BetStatuses, Game
+from horus.enums import Game, RISKS, BetTime
 import horus.apis as apis
 from dateutil.parser import parse, parserinfo
-from horus.config import X8_LIVE_FOOTBALL, X8_BASE_URL, TEMP_FOLDER
+from horus.config import X8_LIVE_FOOTBALL, X8_BASE_URL, TEMP_FOLDER, logger
 
 
 class MyParser(parserinfo):
@@ -308,11 +305,13 @@ def recorrect_url(url):
 def matches_data(json_response):
     if json_response and json_response['Value']:
         return json_response['Value']
-    return []
+    return None
 
 
 def extract_matches_info(data):
     ori_dict = matches_data(data)
+    if not ori_dict:
+        return None
     new_dict = []
     map_key = {
         'I'       : 'match_id',
@@ -327,7 +326,8 @@ def extract_matches_info(data):
         'SC.I'    : 'penalties',  # 'Videoreview' info
         'SC.S'    : 'additional_info',
         'SC.ST'   : 'main_info',
-        'AE'      : 'games'
+        'AE'      : 'games',
+        'S'       : 'kickoff'
     }
     for o in ori_dict:
         # Skip amateur, indoor, short football
@@ -419,76 +419,78 @@ def extract_matches_info(data):
     return new_dict
 
 
-# def extract_match_info(data, match_id=None, game1h_id=None, game2h_id=None):
-#     original_match = matches_data(data)
-#     map_key = {
-#         'I'       : 'match_id',
-#         'SC.CP'   : 'half',
-#         'SC.CPS'  : 'half_text',
-#         'SC.TS'   : 'time_second',
-#         'LI'      : 'league_id',
-#         'LE'      : 'league',
-#         'O1E'     : 'team1',
-#         'O2E'     : 'team2',
-#         'SC.FS.S1': 'team1_score',
-#         'SC.FS.S2': 'team2_score',
-#         'SC.I'    : 'penalties',
-#         'SG'      : 'halfs',
-#         'SC.PS'   : 'match_score_obj',
-#         'GE'      : 'event_odds'
-#     }
-#     match = {}
-#     for k in map_key:
-#         if '.' in k:
-#             ak = re.split(r"[.]", k)
-#             value = original_match
-#             for e in ak:
-#                 value = value.get(e)
-#         else:
-#             value = original_match.get(k)
-#         if map_key.get(k) == 'penalties':
-#             match[map_key.get(k)] = value or None
-#         else:
-#             match[map_key.get(k)] = value or 0
-#     # Add current time of the match
-#     tm = convert_timestamp_to_timematch(match.get('time_second'))
-#     match['time_match'] = tm
-#     league_name = remove_special_str_excepted_spaces(match.get('league').lower())
-#     # Add prediction from games obj - AE.ME
-#     match['full_time_game_id'] = match['match_id'] if match_id is None else match_id
-#     match['1half_game_id'] = game1h_id
-#     match['2half_game_id'] = game2h_id
-#
-#     if not game1h_id and not game2h_id and isinstance(match['halfs'], list):
-#         for g in match['halfs']:
-#             if 'PN' in g and 'TG' not in g and g['P'] == 1 and g['PN'].lower() == '1 half':
-#                 match['1half_game_id'] = g['I']
-#             if 'PN' in g and 'TG' not in g and g['P'] == 2 and g['PN'].lower() == '2 half':
-#                 match['2half_game_id'] = g['I']
-#     match.pop('halfs', None)
-#     # TODO: From current half, can find all available events, odds for bet
-#     event_obj = []
-#     event_odds = match.get('event_odds')
-#     if isinstance(event_odds, list):
-#         for item in match.get('event_odds'):
-#             for gs in item.get('E'):
-#                 for obj in gs:
-#                     if obj.get('T') in [Game.X.value, Game.TOTAL_UNDER.value, Game.TOTAL_EVEN_YES.value,
-#                                         Game.TOTAL_EVEN_NO.value, Game.CORRECT_SCORE.value, Game.EUROPEAN_HANDICAP_X.value]:
-#                         coef = obj.get('C')
-#                         type = obj.get('T')
-#                         param = obj.get('P')
-#                         game = obj.get('G')
-#                         event_obj.append({'game_type': type, 'coef': coef, 'param': param})
-#     match['events'] = event_obj
-#
-#     # Add match's URLs
-#     match['full_time_url'] = build_game_url(match.get('match_id'), match.get('league_id'), league_name)
-#     if match['1half_game_id']:
-#         match['1half_url'] = build_game_url(match['1half_game_id'], match.get('league_id'), league_name)
-#     if match['2half_game_id']:
-#         match['2half_url'] = build_game_url(match['2half_game_id'], match.get('league_id'), league_name)
-#     return match
+def extract_match_info(data, match_id=None, game1h_id=None, game2h_id=None):
+    original_match = matches_data(data)
+    if not original_match:
+        return None
+    map_key = {
+        'I'       : 'match_id',
+        'SC.CP'   : 'half',
+        'SC.CPS'  : 'half_text',
+        'SC.TS'   : 'time_second',
+        'LI'      : 'league_id',
+        'LE'      : 'league',
+        'O1E'     : 'team1',
+        'O2E'     : 'team2',
+        'SC.FS.S1': 'team1_score',
+        'SC.FS.S2': 'team2_score',
+        'SC.I'    : 'penalties',
+        'SG'      : 'halfs',
+        'SC.PS'   : 'match_score_obj',
+        'GE'      : 'event_odds'
+    }
+    match = {}
+    for k in map_key:
+        if '.' in k:
+            ak = re.split(r"[.]", k)
+            value = original_match
+            for e in ak:
+                value = value.get(e)
+        else:
+            value = original_match.get(k)
+        if map_key.get(k) == 'penalties':
+            match[map_key.get(k)] = value or None
+        else:
+            match[map_key.get(k)] = value or 0
+    # Add current time of the match
+    tm = convert_timestamp_to_timematch(match.get('time_second'))
+    match['time_match'] = tm
+    league_name = remove_special_str_excepted_spaces(match.get('league').lower())
+    # Add prediction from games obj - AE.ME
+    match['full_time_game_id'] = match['match_id'] if match_id is None else match_id
+    match['1half_game_id'] = game1h_id
+    match['2half_game_id'] = game2h_id
+
+    if not game1h_id and not game2h_id and isinstance(match['halfs'], list):
+        for g in match['halfs']:
+            if 'PN' in g and 'TG' not in g and g['P'] == 1 and g['PN'].lower() == '1 half':
+                match['1half_game_id'] = g['I']
+            if 'PN' in g and 'TG' not in g and g['P'] == 2 and g['PN'].lower() == '2 half':
+                match['2half_game_id'] = g['I']
+    match.pop('halfs', None)
+    # TODO: From current half, can find all available events, odds for bet
+    event_obj = []
+    event_odds = match.get('event_odds')
+    if isinstance(event_odds, list):
+        for item in match.get('event_odds'):
+            for gs in item.get('E'):
+                for obj in gs:
+                    if obj.get('T') in [Game.X.value, Game.TOTAL_UNDER.value, Game.TOTAL_EVEN_YES.value,
+                                        Game.TOTAL_EVEN_NO.value, Game.CORRECT_SCORE.value, Game.EUROPEAN_HANDICAP_X.value]:
+                        coef = obj.get('C')
+                        type = obj.get('T')
+                        param = obj.get('P')
+                        game = obj.get('G')
+                        event_obj.append({'game_type': type, 'coef': coef, 'param': param})
+    match['events'] = event_obj
+
+    # Add match's URLs
+    match['full_time_url'] = build_game_url(match.get('match_id'), match.get('league_id'), league_name)
+    if match['1half_game_id']:
+        match['1half_url'] = build_game_url(match['1half_game_id'], match.get('league_id'), league_name)
+    if match['2half_game_id']:
+        match['2half_url'] = build_game_url(match['2half_game_id'], match.get('league_id'), league_name)
+    return match
 
 
 def build_game_url(match_id, league_id, league_name):
@@ -524,16 +526,19 @@ def get_live_matches_1xbet():
     return live_matches
 
 
-# def get_live_match_1xbet(match_id):
-#     res = apis.get_live_match_1xbet(match_id)
-#     live_match = extract_match_info(res)
-#     print(f"event happened in half: {live_match.get('half')}")
-#     if live_match.get('half') == 1:
-#         print(f"recall get live match for half 1")
-#         res = apis.get_live_match_1xbet(live_match.get('1half_game_id'))
-#         if res.get('Success'):
-#             live_match = extract_match_info(res, match_id, live_match.get('1half_game_id'), live_match.get('2half_game_id'))
-#     return live_match
+def get_live_match_1xbet(match_id):
+    res = apis.get_live_match_1xbet(match_id)
+    live_match = extract_match_info(res)
+    if not live_match:
+        return None
+    # print(f"event happened in half: {live_match.get('half')}")
+    # if live_match.get('half') == 1:
+    #     print(f"recall get live match for half 1")
+    #     res = apis.get_live_match_1xbet(live_match.get('1half_game_id'))
+    #     if res.get('Success') or not res.get('Value'):
+    #         live_match = extract_match_info(res, match_id, live_match.get('1half_game_id'), live_match.get('2half_game_id'))
+
+    return live_match
 
 
 def get_num_live_matches(sport="Football", num_games=50):
@@ -1046,6 +1051,207 @@ def sort_json(data, key='remark_coef', reverse=True):
 #         print("Email sent successfully!")
 #     except Exception as e:
 #         print(f"Error: {str(e)}")
+
+
+def check_scores(old_match, new_match):
+    team_score = 0
+    if old_match['match_id'] == new_match['match_id']:
+        if old_match['team1_score'] < new_match['team1_score']:
+            team_score = 1
+        elif old_match['team1_score'] > new_match['team1_score']:
+            team_score = -1
+        elif old_match['team2_score'] < new_match['team2_score']:
+            team_score = 2
+        elif old_match['team2_score'] > new_match['team2_score']:
+            team_score = -2
+    return team_score
+
+
+async def check_rules(start_prediction, current_prediction, score_team1, score_team2, half, time_sec):
+    # Check risk for betting under
+    total_score = score_team1 + score_team2
+    diff_score = abs(score_team1 - score_team2)
+    if half == 1:
+        # TODO:
+        #  #1 Add win-lose prediction into total scores prediction
+        #  #2 Check red cards into prediction
+        #  #3 total scores prediction in 2nd half go to reduced more than 50% from start prediction
+        #     Bet over total scores
+        # start_prediction < 3: The match is predicted low scores
+        if 0 < start_prediction <= 3 or (start_prediction == 0 and total_score*2 < current_prediction):
+            # The situation seems going exact start prediction until close to the end of half
+            if total_score < start_prediction:
+                # The score happens after 36th minute
+                if time_sec >= BetTime.MIN36.value:
+                    return RISKS.LOW
+                # The score happens from 33rd to 36th minute
+                # TODO: Add indicators to check
+                #   If low scores, skip check odds increased continuously and win team prediction after the score
+                elif BetTime.MIN34.value <= time_sec <= BetTime.MIN36.value:
+                    return RISKS.MEDIUM
+            # The situation seems going wrong start prediction until close to the end of half
+            elif total_score >= start_prediction:
+                # The score happens after 37th minute
+                if time_sec >= BetTime.MIN37.value:
+                    return RISKS.MEDIUM
+                else:
+                    return RISKS.HIGH
+        # start_prediction == 3: The match is predicted medium scores
+        elif start_prediction == 3.5:
+            # The situation seems going exact start prediction until close to the end of half
+            if total_score <= 3:
+                # The score happens after 37th minute
+                if time_sec > BetTime.MIN37.value:
+                    return RISKS.LOW
+                # The score happens from 34th to 36th minute
+                elif BetTime.MIN35.value <= time_sec <= BetTime.MIN37.value:
+                    return RISKS.MEDIUM
+            elif total_score == 4:
+                # The score happens after 39th minute
+                if time_sec > BetTime.MIN39.value:
+                    return RISKS.MEDIUM
+                # The score happens from 36th to 39th minute
+                elif BetTime.MIN36.value <= time_sec <= BetTime.MIN39.value:
+                    return RISKS.HIGH
+            return RISKS.HIGHEST
+        return RISKS.HIGHEST
+    elif half == 2:
+        # start_prediction < 3: The match is predicted low scores
+        if total_score <= 4:
+            if 0 < start_prediction <= 3.5:
+                if diff_score == 1:
+                    # The score happens after 86th minute
+                    if time_sec > BetTime.MIN85.value:
+                        return RISKS.LOW
+                    elif BetTime.MIN84.value <= time_sec <= BetTime.MIN85.value:
+                        return RISKS.MEDIUM
+                    else:
+                        return RISKS.HIGH
+                elif diff_score == 2:
+                    # The score happens after 84th minute
+                    if time_sec > BetTime.MIN84.value:
+                        return RISKS.LOW
+                    # The score happens from 82nd to 84th minute
+                    elif BetTime.MIN83.value <= time_sec <= BetTime.MIN84.value:
+                        return RISKS.MEDIUM
+                    else:
+                        return RISKS.HIGH
+                elif diff_score == 3:
+                    # The score happens after 86th minute
+                    if time_sec > BetTime.MIN86.value:
+                        return RISKS.LOW
+                    elif BetTime.MIN84.value <= time_sec <= BetTime.MIN86.value:
+                        return RISKS.MEDIUM
+                    else:
+                        return RISKS.HIGH
+                elif diff_score == 0:
+                    # The score happens after 86th minute
+                    if time_sec > BetTime.MIN88.value:
+                        return RISKS.LOW
+                    elif BetTime.MIN86.value <= time_sec <= BetTime.MIN88.value:
+                        return RISKS.MEDIUM
+                    else:
+                        return RISKS.HIGH
+                else:
+                    return RISKS.HIGHEST
+            return RISKS.HIGHEST
+        return RISKS.HIGHEST
+    else:
+        return RISKS.HIGHEST
+
+
+async def compare_matches(matches, new_matches):
+    # TODO: New logic - loop new matches to check current scores with existing matches
+    """
+    If found any existing match, pop() it out after check score
+    New matches will be included new scores, and time that are stored into matches json
+    pop() a match from list matches['matches'].pop(matches['matches'].index(m))
+    """
+    bet_coros = []
+    tele_coros = []
+    # Loop through each element of 'matches' list
+    for match in matches:
+        # Loop through each element of 'new_matches' list
+        for new_match in new_matches:
+            # Check if the 'match_id' keys in both dictionaries have the same value
+            if match['match_id'] == new_match['match_id']:
+                # Update prediction to new match
+                new_match['prediction'] = match['prediction']
+                new_match['scores'] = []
+                if 'scores' in match:
+                    new_match['scores'] = match['scores']
+                # Check if is there any score happened
+                team_score = check_scores(match, new_match)
+                if team_score != 0:
+                    # TODO
+                    #  1. Create telegram msg here with type to send it to telebot accordingly
+                    #  2. If meet matrix rules -> bet
+                    match_id = new_match.get('match_id')
+                    league = new_match.get('league')
+                    prediction = new_match.get('prediction')
+                    cur_prediction = new_match.get('cur_prediction')
+                    team1 = new_match.get('team1')
+                    team2 = new_match.get('team2')
+                    team1_score = new_match.get('team1_score')
+                    team2_score = new_match.get('team2_score')
+                    half = new_match.get('half')
+                    time_second = new_match.get('time_second')
+                    time_match = new_match.get('time_match')
+                    penalties = new_match.get('penalties')
+                    team1_redcard = new_match.get('team1_redcard')
+                    team2_redcard = new_match.get('team2_redcard')
+                    url = new_match.get('url')
+                    scores = new_match.get('scores')
+
+                    matched_rule = await check_rules(prediction, cur_prediction, team1_score,
+                                                     team2_score, half, time_second)
+
+                    # store time of the last score
+                    scores.insert(0, time_match)
+                    new_match['scores'] = scores
+
+                break
+        # If the inner loop completes without the 'break' statement, remove the current 'match' from 'matches' list
+        # else:
+        #     matches.remove(match)
+    # TODO: Start bet with asyncio here, refer /async_sample.py
+    await asyncio.gather(*bet_coros, *tele_coros)
+    if len(new_matches) > 0:
+        write_json(new_matches)
+    return new_matches
+
+
+async def delete_matches(matches):
+    logger.info('run deleting ended matches')
+    for match in matches:
+        res_ = get_live_match_1xbet(match.get('match_id'))
+        if not res_ or not res_.get('Success'):
+            matches.remove(match)
+
+
+def fetch_matches_data():
+    last_matches = read_json_w_file_path(f'{TEMP_FOLDER}/matches.json')
+    live_matches = get_live_matches_1xbet()
+    logger.info(f'Popular live matches: {len(live_matches)}')
+
+    # # last_matches is not correct format, create last matches with live_matches
+    # if not isinstance(last_matches, list):
+    #     if len(live_matches) > 0:
+    #         utils.write_json(live_matches)
+    asyncio.run(compare_matches(last_matches, live_matches))
+
+
+def delete_ended_matches():
+    last_matches = read_json_w_file_path(f'{TEMP_FOLDER}/matches.json')
+    asyncio.run(delete_matches(last_matches))
+    # live_matches = utils.get_live_matches_1xbet()
+    # logger.info(f'Popular live matches: {len(live_matches)}')
+    #
+    # # # last_matches is not correct format, create last matches with live_matches
+    # # if not isinstance(last_matches, list):
+    # #     if len(live_matches) > 0:
+    # #         utils.write_json(live_matches)
+    # asyncio.run(compare_matches(last_matches, live_matches))
 
 
 if __name__ == "__main__":

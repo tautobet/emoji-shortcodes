@@ -3,11 +3,16 @@ import asyncio
 import streamlit as st
 import requests
 import pandas as pd
-import horus.utils as utils
-import horus.apis as apis
+from horus.utils import (
+    get_live_matches_1xbet,
+    get_live_match_1xbet,
+    read_json_w_file_path,
+    compare_matches,
+    convert_timematch_to_seconds,
+    sort_json
+)
 
-from horus.enums import RISKS, BetTime
-from horus.config import logger, TEMP_FOLDER, X8_BASE_URL
+from horus.config import logger, TEMP_FOLDER
 from schedule import every, repeat, run_pending
 
 
@@ -20,175 +25,6 @@ def fetch_emojis():
         'Emojis': emojis,
         'Shortcodes': [f':{code}:' for code in codes],
     })
-
-
-def check_scores(old_match, new_match):
-    team_score = 0
-    if old_match['match_id'] == new_match['match_id']:
-        if old_match['team1_score'] < new_match['team1_score']:
-            team_score = 1
-        elif old_match['team1_score'] > new_match['team1_score']:
-            team_score = -1
-        elif old_match['team2_score'] < new_match['team2_score']:
-            team_score = 2
-        elif old_match['team2_score'] > new_match['team2_score']:
-            team_score = -2
-    return team_score
-
-
-async def check_rules(start_prediction, current_prediction, score_team1, score_team2, half, time_sec):
-    # Check risk for betting under
-    total_score = score_team1 + score_team2
-    diff_score = abs(score_team1 - score_team2)
-    if half == 1:
-        # TODO:
-        #  #1 Add win-lose prediction into total scores prediction
-        #  #2 Check red cards into prediction
-        #  #3 total scores prediction in 2nd half go to reduced more than 50% from start prediction
-        #     Bet over total scores
-        # start_prediction < 3: The match is predicted low scores
-        if 0 < start_prediction <= 3 or (start_prediction == 0 and total_score*2 < current_prediction):
-            # The situation seems going exact start prediction until close to the end of half
-            if total_score < start_prediction:
-                # The score happens after 36th minute
-                if time_sec >= BetTime.MIN36.value:
-                    return RISKS.LOW
-                # The score happens from 33rd to 36th minute
-                # TODO: Add indicators to check
-                #   If low scores, skip check odds increased continuously and win team prediction after the score
-                elif BetTime.MIN34.value <= time_sec <= BetTime.MIN36.value:
-                    return RISKS.MEDIUM
-            # The situation seems going wrong start prediction until close to the end of half
-            elif total_score >= start_prediction:
-                # The score happens after 37th minute
-                if time_sec >= BetTime.MIN37.value:
-                    return RISKS.MEDIUM
-                else:
-                    return RISKS.HIGH
-        # start_prediction == 3: The match is predicted medium scores
-        elif start_prediction == 3.5:
-            # The situation seems going exact start prediction until close to the end of half
-            if total_score <= 3:
-                # The score happens after 37th minute
-                if time_sec > BetTime.MIN37.value:
-                    return RISKS.LOW
-                # The score happens from 34th to 36th minute
-                elif BetTime.MIN35.value <= time_sec <= BetTime.MIN37.value:
-                    return RISKS.MEDIUM
-            elif total_score == 4:
-                # The score happens after 39th minute
-                if time_sec > BetTime.MIN39.value:
-                    return RISKS.MEDIUM
-                # The score happens from 36th to 39th minute
-                elif BetTime.MIN36.value <= time_sec <= BetTime.MIN39.value:
-                    return RISKS.HIGH
-            return RISKS.HIGHEST
-        return RISKS.HIGHEST
-    elif half == 2:
-        # start_prediction < 3: The match is predicted low scores
-        if total_score <= 4:
-            if 0 < start_prediction <= 3.5:
-                if diff_score == 1:
-                    # The score happens after 86th minute
-                    if time_sec > BetTime.MIN85.value:
-                        return RISKS.LOW
-                    elif BetTime.MIN84.value <= time_sec <= BetTime.MIN85.value:
-                        return RISKS.MEDIUM
-                    else:
-                        return RISKS.HIGH
-                elif diff_score == 2:
-                    # The score happens after 84th minute
-                    if time_sec > BetTime.MIN84.value:
-                        return RISKS.LOW
-                    # The score happens from 82nd to 84th minute
-                    elif BetTime.MIN83.value <= time_sec <= BetTime.MIN84.value:
-                        return RISKS.MEDIUM
-                    else:
-                        return RISKS.HIGH
-                elif diff_score == 3:
-                    # The score happens after 86th minute
-                    if time_sec > BetTime.MIN86.value:
-                        return RISKS.LOW
-                    elif BetTime.MIN84.value <= time_sec <= BetTime.MIN86.value:
-                        return RISKS.MEDIUM
-                    else:
-                        return RISKS.HIGH
-                elif diff_score == 0:
-                    # The score happens after 86th minute
-                    if time_sec > BetTime.MIN88.value:
-                        return RISKS.LOW
-                    elif BetTime.MIN86.value <= time_sec <= BetTime.MIN88.value:
-                        return RISKS.MEDIUM
-                    else:
-                        return RISKS.HIGH
-                else:
-                    return RISKS.HIGHEST
-            return RISKS.HIGHEST
-        return RISKS.HIGHEST
-    else:
-        return RISKS.HIGHEST
-
-
-async def compare_matches(matches, new_matches):
-
-    # TODO: New logic - loop new matches to check current scores with existing matches
-    """
-    If found any existing match, pop() it out after check score
-    New matches will be included new scores, and time that are stored into matches json
-    pop() a match from list matches['matches'].pop(matches['matches'].index(m))
-    """
-    bet_coros = []
-    tele_coros = []
-    # Loop through each element of 'matches' list
-    for match in matches:
-        # Loop through each element of 'new_matches' list
-        for new_match in new_matches:
-            # Check if the 'match_id' keys in both dictionaries have the same value
-            if match['match_id'] == new_match['match_id']:
-                # Update prediction to new match
-                new_match['prediction'] = match['prediction']
-                new_match['scores'] = []
-                if 'scores' in match:
-                    new_match['scores'] = match['scores']
-                # Check if is there any score happened
-                team_score = check_scores(match, new_match)
-                if team_score != 0:
-                    # TODO
-                    #  1. Create telegram msg here with type to send it to telebot accordingly
-                    #  2. If meet matrix rules -> bet
-                    match_id        = new_match.get('match_id')
-                    league          = new_match.get('league')
-                    prediction      = new_match.get('prediction')
-                    cur_prediction  = new_match.get('cur_prediction')
-                    team1           = new_match.get('team1')
-                    team2           = new_match.get('team2')
-                    team1_score     = new_match.get('team1_score')
-                    team2_score     = new_match.get('team2_score')
-                    half            = new_match.get('half')
-                    time_second     = new_match.get('time_second')
-                    time_match      = new_match.get('time_match')
-                    penalties       = new_match.get('penalties')
-                    team1_redcard   = new_match.get('team1_redcard')
-                    team2_redcard   = new_match.get('team2_redcard')
-                    url             = new_match.get('url')
-                    scores          = new_match.get('scores')
-
-                    matched_rule = await check_rules(prediction, cur_prediction, team1_score,
-                                                     team2_score, half, time_second)
-
-                    # store time of the last score
-                    scores.insert(0, time_match)
-                    new_match['scores'] = scores
-
-                break
-        # If the inner loop completes without the 'break' statement, remove the current 'match' from 'matches' list
-        else:
-            matches.remove(match)
-    # TODO: Start bet with asyncio here, refer /async_sample.py
-    await asyncio.gather(*bet_coros, *tele_coros)
-    if len(new_matches) > 0:
-        utils.write_json(new_matches)
-    return new_matches
 
 
 # Begin streamlit UI
@@ -205,22 +41,24 @@ def page_load():
 page_load()
 with st.empty():
     def find_max_value(arr):
-        max_value = utils.convert_timematch_to_seconds(arr[0])  # Initialize max_value with the first element of the array
+        max_value = convert_timematch_to_seconds(arr[0])  # Initialize max_value with the first element of the array
         for val in arr:
-            if utils.convert_timematch_to_seconds(val) > max_value:
-                max_value = utils.convert_timematch_to_seconds(val)
+            if convert_timematch_to_seconds(val) > max_value:
+                max_value = convert_timematch_to_seconds(val)
         return max_value
 
     def color_red_column(col):
         return ['background-color: lightgreen' if len(x) > 0 else None for x in col]
 
+    def make_clickable_both(val):
+        return f'<a target="_blank" href="{val}">Link</a>'
 
-    @repeat(every(10).seconds)
+    @repeat(every(7).seconds)
     def load_details():
         # live_matches = Utils.sort_json(Utils.get_live_matches_1xbet(), "time_match")
 
-        live_matches = utils.sort_json(
-            utils.read_json_w_file_path(f'{TEMP_FOLDER}/matches.json'),
+        live_matches = sort_json(
+            read_json_w_file_path(f'{TEMP_FOLDER}/matches.json'),
             "time_match"
         )
         df = pd.DataFrame(
@@ -239,25 +77,34 @@ with st.empty():
                 "scores",
                 "url")
         )
+
+
+        # df['scores'] = df.apply(color_red_column, subset=['scores'])
         # df_styled = df.style.apply(color_red_column, subset=['scores'])
         # df_styled = df.style.map(lambda x: f"background-color: {'green' if len(x) > 0 else 'red'}", subset='scores')
+        # df.style.format({'url': make_clickable_both})
+
+
+        # def highlight_market(cell):
+        #     return 'background-color: lightgreen;'
+        #
+        # df['prediction'] = df['prediction'].apply(highlight_market)
+        # st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+
+        # def highlighter(x):
+        #     # initialize default colors
+        #     color_codes = pd.DataFrame('', index=x.index, columns=x.columns)
+        #     # set Check color to red if consumption exceeds threshold green otherwise
+        #     color_codes['scores'] = np.where(len(x['scores']) > 0, 'color:red', 'color:green')
+        #     return color_codes
+        #
+        # # apply highlighter to df
+        # df_style = df.style.apply(highlighter, axis=None)
+
         st.dataframe(
             df,
             height=(len(live_matches) + 1) * 35 + 3,
             column_config={
-                "prediction": st.column_config.NumberColumn(
-                    format="%.1f",
-                    width="small"
-                ),
-                "cur_prediction": st.column_config.NumberColumn(
-                    format="%.1f",
-                    width="small"
-                ),
-                "url": st.column_config.LinkColumn(
-                    label="Match Link",
-                    display_text=f"Link",
-                    width="small"
-                ),
                 "league": st.column_config.Column(
                     width="medium"
                 ),
@@ -281,22 +128,47 @@ with st.empty():
                 ),
                 "half": st.column_config.Column(
                     width="small"
-                )
+                ),
+                "prediction": st.column_config.NumberColumn(
+                    format="%.1f",
+                    width="small"
+                ),
+                "cur_prediction": st.column_config.NumberColumn(
+                    format="%.1f",
+                    width="small"
+                ),
+                "scores": st.column_config.Column(
+                    width="medium"
+                ),
+                "url": st.column_config.LinkColumn(
+                    label="Match Link",
+                    display_text=f"Link",
+                    width="small"
+                ),
+
             }
         )
 
-    @repeat(every(30).seconds)
-    def strike_details():
-        last_matches = utils.read_json_w_file_path(f'{TEMP_FOLDER}/matches.json')
-        live_matches = utils.get_live_matches_1xbet()
-        logger.info(f'Popular live matches: {len(live_matches)}')
 
-        # # last_matches is not correct format, create last matches with live_matches
-        # if not isinstance(last_matches, list):
-        #     if len(live_matches) > 0:
-        #         utils.write_json(live_matches)
-        asyncio.run(compare_matches(last_matches, live_matches))
+    async def delete_matches(matches):
+        logger.info('run deleting ended matches')
+        for match in matches:
+            res_ = get_live_match_1xbet(match.get('match_id'))
+            if not res_ or not res_.get('Success'):
+                matches.remove(match)
 
+    @repeat(every(15).seconds)
+    def fetch_matches_data():
+        last_matches = read_json_w_file_path(f'{TEMP_FOLDER}/matches.json')
+        live_matches = get_live_matches_1xbet()
+        if live_matches:
+            logger.info(f'Popular live matches: {len(live_matches)}')
+            asyncio.run(compare_matches(last_matches, live_matches))
+
+    @repeat(every(5).minutes)
+    def delete_ended_matches():
+        last_matches = read_json_w_file_path(f'{TEMP_FOLDER}/matches.json')
+        asyncio.run(delete_matches(last_matches))
 
     while 1:
         run_pending()

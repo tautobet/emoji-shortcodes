@@ -261,7 +261,7 @@ def get_live_matches_1xbet(num_games=50):
 
 def get_live_match_1xbet(match_id):
 
-    url = f"{X8_LIVE_1}?id={match_id}{X8_LIVE_1_PARAM}"
+    url = f"{X8_BASE_URL}{X8_LIVE_1}?id={match_id}{X8_LIVE_1_PARAM}"
 
     try:
         # Start the timer

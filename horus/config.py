@@ -62,6 +62,7 @@ X8_BALANCE       = os.environ.get('X8_BALANCE')
 X8_COOKIE        = os.environ.get('X8_COOKIE')
 X8_AUTH          = os.environ.get('X8_AUTH')
 
+JSON_SERVER      = os.environ.get('JSON_SERVER')
 #region MAIN@load config
 def load_config_file(file_path):
     global logger
