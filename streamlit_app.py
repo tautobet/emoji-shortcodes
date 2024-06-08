@@ -205,82 +205,87 @@ page_load()
 with st.empty():
     @repeat(every(10).seconds)
     def load_details():
-        url = f"{JSON_SERVER}/1x/"
-        response = requests.request("GET", url, headers={}, data={})
+        try:
+            url = f"{JSON_SERVER}/1x/"
+            response = requests.request("GET", url, headers={}, data={})
 
-        # print(response.text)
-        data = response.json()
+            # print(response.text)
+            data = response.json()
 
-        df = pd.DataFrame(
-            data=data,
-            columns=(
-                "league",
-                "team1",
-                "team2",
-                "score",
-                "time_match",
-                "add_time",
-                "half",
-                "prediction",
-                "cur_prediction",
-                "scores",
-                "url")
-        ).sort_values(by='time_match', ascending=False)
-        st.dataframe(
-            df,
-            height=(len(data) + 1) * 35 + 3,
-            column_config={
-                "league": st.column_config.Column(
-                    label="League",
-                    width="medium"
-                ),
-                "team1": st.column_config.Column(
-                    label="T1",
-                    width="small"
-                ),
-                "team2": st.column_config.Column(
-                    label="T2",
-                    width="small"
-                ),
-                "score": st.column_config.TextColumn(
-                    label="Score",
-                    width="small"
-                ),
-                "time_match": st.column_config.Column(
-                    label="Time",
-                    width="small"
-                ),
-                "add_time": st.column_config.Column(
-                    label="ET",
-                    width="small"
-                ),
-                "half": st.column_config.Column(
-                    label="Half",
-                    width="small"
-                ),
-                "prediction": st.column_config.NumberColumn(
-                    label="Pre",
-                    format="%.1f".center(30),
-                    width="small"
-                ),
-                "cur_prediction": st.column_config.NumberColumn(
-                    label="Cur-Pre",
-                    format="%.1f".center(30),
-                    width="small"
-                ),
-                "scores": st.column_config.Column(
-                    label="Scores",
-                    width="medium"
-                ),
-                "url": st.column_config.LinkColumn(
-                    label="Link",
-                    display_text=f"Link",
-                    width="small"
-                ),
+            df = pd.DataFrame(
+                data=data,
+                columns=(
+                    "league",
+                    "team1",
+                    "team2",
+                    "score",
+                    "time_match",
+                    "add_time",
+                    "half",
+                    "prediction",
+                    "cur_prediction",
+                    "scores",
+                    "url")
+            ).sort_values(by='time_match', ascending=False)
+            st.dataframe(
+                df,
+                height=(len(data) + 1) * 35 + 3,
+                column_config={
+                    "league": st.column_config.Column(
+                        label="League",
+                        width="medium"
+                    ),
+                    "team1": st.column_config.Column(
+                        label="T1",
+                        width="small"
+                    ),
+                    "team2": st.column_config.Column(
+                        label="T2",
+                        width="small"
+                    ),
+                    "score": st.column_config.TextColumn(
+                        label="Score",
+                        width="small"
+                    ),
+                    "time_match": st.column_config.Column(
+                        label="Time",
+                        width="small"
+                    ),
+                    "add_time": st.column_config.Column(
+                        label="ET",
+                        width="small"
+                    ),
+                    "half": st.column_config.Column(
+                        label="Half",
+                        width="small"
+                    ),
+                    "prediction": st.column_config.NumberColumn(
+                        label="Pre",
+                        format="%.1f".center(30),
+                        width="small"
+                    ),
+                    "cur_prediction": st.column_config.NumberColumn(
+                        label="Cur-Pre",
+                        format="%.1f".center(30),
+                        width="small"
+                    ),
+                    "scores": st.column_config.Column(
+                        label="Scores",
+                        width="medium"
+                    ),
+                    "url": st.column_config.LinkColumn(
+                        label="Link",
+                        display_text=f"Link",
+                        width="small"
+                    ),
 
-            }
-        )
-
+                }
+            )
+        except requests.exceptions.RequestException as e:
+            logger.error(f'RequestException: {e}')
+        except ConnectionResetError:
+            logger.error('ConnectionResetError')
+        return None
     while 1:
         run_pending()
         time.sleep(1)
