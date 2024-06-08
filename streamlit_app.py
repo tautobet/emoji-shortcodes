@@ -268,7 +268,7 @@ with st.empty():
                     format="%.1f".center(30),
                     width="small"
                 ),
-                "scores": st.column_config.ListColumn(
+                "scores": st.column_config.Column(
                     label="Scores",
                     width="medium"
                 ),
