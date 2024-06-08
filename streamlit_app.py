@@ -203,7 +203,7 @@ def page_load():
 
 page_load()
 with st.empty():
-    @repeat(every(10).seconds)
+    @repeat(every(15).seconds)
     def load_details():
         try:
             url = f"{JSON_SERVER}/1x/"
@@ -268,10 +268,6 @@ with st.empty():
                         label="Cur-Pre",
                         format="%.1f".center(30),
                         width="small"
-                    ),
-                    "scores": st.column_config.Column(
-                        label="Scores",
-                        width="medium"
                     ),
                     "url": st.column_config.LinkColumn(
                         label="Link",
