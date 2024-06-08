@@ -4,12 +4,11 @@ import streamlit as st
 import requests
 import pandas as pd
 import horus.utils as utils
-import horus.apis as apis
-import numpy as np
 
 from horus.enums import RISKS, BetTime
 from horus.config import logger, TEMP_FOLDER, X8_BASE_URL, JSON_SERVER
 from schedule import every, repeat, run_pending
+
 
 def fetch_emojis():
     resp = requests.get(
@@ -202,19 +201,11 @@ def page_load():
 # End
 
 
-import subprocess
-from horus.config import CODE_HOME
-
-# Replace 'script.sh' with the name of your Bash script file
-subprocess.run(['bash', f"{CODE_HOME}/devops/test.sh"])
-
-
-
 page_load()
 with st.empty():
     @repeat(every(10).seconds)
     def load_details():
-        url = f"{JSON_SERVER}/8x/"
+        url = f"{JSON_SERVER}/1x/"
         response = requests.request("GET", url, headers={}, data={})
 
         # print(response.text)
@@ -277,7 +268,7 @@ with st.empty():
                     format="%.1f".center(30),
                     width="small"
                 ),
-                "scores": st.column_config.Column(
+                "scores": st.column_config.ListColumn(
                     label="Scores",
                     width="medium"
                 ),
