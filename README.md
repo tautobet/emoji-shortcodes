@@ -20,26 +20,11 @@ pip install poetry
 then install dependencies
 `poetry install`
 
-## Testing
-```
-poetry shell
-python -m pytest
-```
 
-
-
-## Run
-
-1. Run API server
-```
- poetry shell
- python -m babel.app
-```
-
-2. Run Streamlit app (stapp.py)
+4. Run Streamlit app (stapp.py)
 ```
 poetry shell
 python -m streamlit run streamlit_app.py
 ```
-   
+
 
