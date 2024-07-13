@@ -56,6 +56,7 @@ with st.empty():
                             "add_time",
                             "half",
                             "prediction",
+                            "h2_prediction",
                             "cur_prediction",
                             "scores",
                             "url")
@@ -94,6 +95,11 @@ with st.empty():
                             ),
                             "prediction": st.column_config.NumberColumn(
                                 label="Pre",
+                                format="%.1f".center(30),
+                                width="small"
+                            ),
+                            "h2_prediction": st.column_config.NumberColumn(
+                                label="Pre-H2",
                                 format="%.1f".center(30),
                                 width="small"
                             ),
