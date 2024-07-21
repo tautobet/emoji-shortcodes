@@ -99,7 +99,7 @@ with st.empty():
                                 width="small"
                             ),
                             "h2_prediction": st.column_config.NumberColumn(
-                                label="Pre-H2",
+                                label="H2-Pre",
                                 format="%.1f".center(30),
                                 width="small"
                             ),
@@ -107,6 +107,10 @@ with st.empty():
                                 label="Cur-Pre",
                                 format="%.1f".center(30),
                                 width="small"
+                            ),
+                            "scores": st.column_config.TextColumn(
+                                label="Scores",
+                                width="medium"
                             ),
                             "url": st.column_config.LinkColumn(
                                 label="Link",
