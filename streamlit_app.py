@@ -60,7 +60,7 @@ with st.empty():
                             "cur_prediction",
                             "scores",
                             "url")
-                    ).sort_values(by='time_match', ascending=False)
+                    ).sort_values(by=['half', 'time_match'], ascending=[False, False], inplace=True)
                     st.dataframe(
                         df,
                         height=(len(data) + 1) * 35 + 3,
