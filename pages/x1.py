@@ -135,7 +135,7 @@ with st.empty():
             logger.error('ConnectionResetError')
         return None
 
-    schedule1.every(15).seconds.do(load_data)
+    schedule1.every(30).seconds.do(load_data)
     load_data()
 
     while not os.path.exists("stop_1x.flag"):

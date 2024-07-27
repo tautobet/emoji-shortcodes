@@ -132,7 +132,7 @@ with st8.empty():
             logger.error('ConnectionResetError')
         return None
 
-    schedule8.every(15).seconds.do(load_data)
+    schedule8.every(30).seconds.do(load_data)
     load_data()
 
     while not os.path.exists("stop_8x.flag"):
