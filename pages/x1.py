@@ -3,7 +3,7 @@ import os
 import streamlit as st
 import requests
 import pandas as pd
-from horus.utils import pagination
+from horus import utils
 from horus.config import logger, JSON_SERVER
 from schedule import every, run_pending, clear
 
@@ -54,7 +54,7 @@ with st.empty():
                 while total_data > count_data:
                     page = 1  # Page number
                     limit = 30  # Number of items per page
-                    paginated_data = pagination(data, page, limit)
+                    paginated_data = utils.pagination(data, page, limit)
                     count_data += len(paginated_data)
 
                     if paginated_data:
