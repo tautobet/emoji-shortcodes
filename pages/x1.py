@@ -5,7 +5,7 @@ import requests
 import pandas as pd
 from horus.utils import pagination
 from horus.config import logger, JSON_SERVER
-import schedule as schedule1
+from schedule import every, run_pending, clear
 
 
 def fetch_emojis():
@@ -139,11 +139,11 @@ with st.empty():
             logger.error('ConnectionResetError')
         return None
 
-    schedule1.every(30).seconds.do(load_data)
+    every(30).seconds.do(load_data)
     load_data()
 
     while not os.path.exists("stop_1x.flag"):
-        schedule1.run_pending()
+        run_pending()
         time.sleep(1)
 
-    schedule1.clear()
+    clear()
