@@ -1,14 +1,10 @@
 import time
 import os
-
-import schedule
 import streamlit as st
 import requests
 import pandas as pd
-import horus.utils as utils
-
-from horus.enums import RISKS, BetTime
-from horus.config import logger, TEMP_FOLDER, X8_BASE_URL, JSON_SERVER
+from horus.utils import pagination
+from horus.config import logger, JSON_SERVER
 import schedule as schedule1
 
 
@@ -53,82 +49,90 @@ with st.empty():
                 # print(response.text)
                 data = response.json()
 
-                if data:
-                    df = pd.DataFrame(
-                        data=data,
-                        columns=(
-                            "league",
-                            "team1",
-                            "team2",
-                            "score",
-                            "time_match",
-                            "add_time",
-                            "half",
-                            "prediction",
-                            "h2_prediction",
-                            "cur_prediction",
-                            "scores",
-                            "url")
-                    ).sort_values(by='time_match', ascending=False)
-                    st.dataframe(
-                        df,
-                        height=(len(data) + 1) * 35 + 3,
-                        column_config={
-                            "league": st.column_config.Column(
-                                label="League",
-                                width="medium"
-                            ),
-                            "team1": st.column_config.Column(
-                                label="T1",
-                                width="small"
-                            ),
-                            "team2": st.column_config.Column(
-                                label="T2",
-                                width="small"
-                            ),
-                            "score": st.column_config.TextColumn(
-                                label="Score",
-                                width="small"
-                            ),
-                            "time_match": st.column_config.Column(
-                                label="Time",
-                                width="small"
-                            ),
-                            "add_time": st.column_config.Column(
-                                label="ET",
-                                width="small"
-                            ),
-                            "half": st.column_config.Column(
-                                label="Half",
-                                width="small"
-                            ),
-                            "prediction": st.column_config.NumberColumn(
-                                label="Pre",
-                                format="%.1f".center(30),
-                                width="small"
-                            ),
-                            "h2_prediction": st.column_config.NumberColumn(
-                                label="H2-Pre",
-                                format="%.1f".center(30),
-                                width="small"
-                            ),
-                            "cur_prediction": st.column_config.NumberColumn(
-                                label="Cur-Pre",
-                                format="%.1f".center(30),
-                                width="small"
-                            ),
-                            "scores": st.column_config.TextColumn(
-                                label="Scores",
-                                width="medium"
-                            ),
-                            "url": st.column_config.LinkColumn(
-                                label="Link",
-                                display_text=f"Link",
-                                width="small"
-                            ),
+                total_data = len(data)
+                count_data = 0
+                while total_data > count_data:
+                    page = 1  # Page number
+                    limit = 30  # Number of items per page
+                    paginated_data = pagination(data, page, limit)
+                    count_data += len(paginated_data)
 
-                        }
-                    )
+                    if paginated_data:
+                        df = pd.DataFrame(
+                            data=data,
+                            columns=(
+                                "league",
+                                "team1",
+                                "team2",
+                                "score",
+                                "time_match",
+                                "add_time",
+                                "half",
+                                "prediction",
+                                "h2_prediction",
+                                "cur_prediction",
+                                "scores",
+                                "url")
+                        ).sort_values(by='time_match', ascending=False)
+                        st.dataframe(
+                            df,
+                            height=(len(data) + 1) * 35 + 3,
+                            column_config={
+                                "league": st.column_config.Column(
+                                    label="League",
+                                    width="medium"
+                                ),
+                                "team1": st.column_config.Column(
+                                    label="T1",
+                                    width="small"
+                                ),
+                                "team2": st.column_config.Column(
+                                    label="T2",
+                                    width="small"
+                                ),
+                                "score": st.column_config.TextColumn(
+                                    label="Score",
+                                    width="small"
+                                ),
+                                "time_match": st.column_config.Column(
+                                    label="Time",
+                                    width="small"
+                                ),
+                                "add_time": st.column_config.Column(
+                                    label="ET",
+                                    width="small"
+                                ),
+                                "half": st.column_config.Column(
+                                    label="Half",
+                                    width="small"
+                                ),
+                                "prediction": st.column_config.NumberColumn(
+                                    label="Pre",
+                                    format="%.1f".center(30),
+                                    width="small"
+                                ),
+                                "h2_prediction": st.column_config.NumberColumn(
+                                    label="H2-Pre",
+                                    format="%.1f".center(30),
+                                    width="small"
+                                ),
+                                "cur_prediction": st.column_config.NumberColumn(
+                                    label="Cur-Pre",
+                                    format="%.1f".center(30),
+                                    width="small"
+                                ),
+                                "scores": st.column_config.TextColumn(
+                                    label="Scores",
+                                    width="medium"
+                                ),
+                                "url": st.column_config.LinkColumn(
+                                    label="Link",
+                                    display_text=f"Link",
+                                    width="small"
+                                ),
+
+                            }
+                        )
         except requests.exceptions.RequestException as e:
             logger.error(f'RequestException: {e}')
         except ConnectionResetError:

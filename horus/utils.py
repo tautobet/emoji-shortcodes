@@ -1254,6 +1254,13 @@ def delete_ended_matches():
     # asyncio.run(compare_matches(last_matches, live_matches))
 
 
+def pagination(array, page, limit):
+    start_index = (page - 1) * limit
+    end_index = page * limit
+
+    return array[start_index:end_index]
+
+
 if __name__ == "__main__":
     # Example usage
     # import asyncio
