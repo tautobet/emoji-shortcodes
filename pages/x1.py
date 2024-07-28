@@ -65,6 +65,7 @@ with st.empty():
                                 "team1",
                                 "team2",
                                 "score",
+                                "h1_score",
                                 "time_match",
                                 "add_time",
                                 "half",
@@ -94,6 +95,10 @@ with st.empty():
                                     label="Score",
                                     width="small"
                                 ),
+                                "h1_score": st.column_config.TextColumn(
+                                    label="H1 Score",
+                                    width="small"
+                                ),
                                 "time_match": st.column_config.Column(
                                     label="Time",
                                     width="small"
@@ -112,17 +117,17 @@ with st.empty():
                                     width="small"
                                 ),
                                 "h2_prediction": st.column_config.NumberColumn(
-                                    label="H2-Pre",
+                                    label="H2 Pre",
                                     format="%.1f".center(30),
                                     width="small"
                                 ),
                                 "cur_prediction": st.column_config.NumberColumn(
-                                    label="Cur-Pre",
+                                    label="Cur Pre",
                                     format="%.1f".center(30),
                                     width="small"
                                 ),
                                 "scores": st.column_config.TextColumn(
-                                    label="Scores",
+                                    label="Scored",
                                     width="medium"
                                 ),
                                 "url": st.column_config.LinkColumn(
