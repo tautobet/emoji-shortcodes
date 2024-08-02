@@ -96,8 +96,6 @@ with st.empty():
                                 "team1",
                                 "team2",
                                 "score",
-                                "team1_score",
-                                "team2_score",
                                 "h1_score",
                                 "time_match",
                                 "add_time",
