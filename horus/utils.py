@@ -7,7 +7,7 @@ from horus.enums import Game, RISKS, BetTime
 import horus.apis as apis
 from dateutil.parser import parse, parserinfo
 from horus.config import X8_LIVE_FOOTBALL, X8_BASE_URL, TEMP_FOLDER, logger
-
+from operator import itemgetter
 
 class MyParser(parserinfo):
     def __init__(self):
@@ -857,9 +857,9 @@ def remove_special_str_excepted_spaces(league_str):
 #     return datetime_obj
 
 
-def sort_json(data, key='remark_coef', reverse=True):
+def sort_json(data, keys=itemgetter('remark_coef'), reverse=True):
     # Sort the data by name
-    return sorted(data, key=lambda k: k[key], reverse=reverse)
+    return sorted(data, key=keys, reverse=reverse)
 
 
 # async def bot_send_message(bot_token, title, msg):

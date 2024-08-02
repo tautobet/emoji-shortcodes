@@ -6,7 +6,7 @@ import pandas as pd
 from horus import utils
 from horus.config import logger, JSON_SERVER
 from schedule import every, run_pending, clear
-
+from operator import itemgetter
 
 def fetch_emojis():
     resp = requests.get(
@@ -79,7 +79,7 @@ with st.empty():
 
             if response.status_code == 200:
                 data = response.json()
-
+                data = utils.sort_json(data, keys=itemgetter('half', 'time_second'))
                 total_data = len(data)
                 count_data = 0
                 while total_data > count_data:
@@ -105,7 +105,7 @@ with st.empty():
                                 "cur_prediction",
                                 "scores",
                                 "url")
-                        ).sort_values(by='time_match', ascending=False)
+                        )  # .sort_values(by='time_match', ascending=False)
                         st.dataframe(
                             df.style.apply(highlight_matches, axis=1),
                             height=(len(data) + 1) * 35 + 3,
