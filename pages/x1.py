@@ -40,13 +40,44 @@ if os.path.exists("stop_1x.flag"):
 
 page_load()
 with st.empty():
+    """
+    Light Blue      : #ADD8E6
+    Light Green     : #90EE90
+    Light Yellow    : #FFFFCC
+    Light Pink      : #FFB6C1
+    Light Purple    : #E6E6FA
+    Light Orange    : #FFD700
+    Light Lavender  : #E6E6FA
+    Light Peach     : #FFDAB9
+    Light Mint      : #98FB98
+    Light Coral     : #F08080
+    Blue    : #0000FF
+    Green   : #008000
+    Yellow  : #FFFF00
+    Pink    : #FFC0CB
+    Purple  : #800080
+    Orange  : #FFA500
+    Lavender: #E6E6FA
+    Peach   : #FFDAB9
+    Mint    : #00FF00
+    Coral   : #FF7F50
+    """
+    def highlight_matches(row):
+        if row.prediction:
+            if row.half == "1" and float(row.prediction) <= 3 and row.score in ('0 - 0', '0 - 1', '1 - 0'):
+                return ['color: #00FF00; opacity: 0.5'] * len(row)
+            if row.half == "2" and float(row.prediction) <= 3 and row.score in ('0 - 0', '0 - 1', '1 - 0', '1 - 1', '2 - 1', '1 - 2', '2 - 0', '0 - 2'):
+                return ['color: #00FF00; opacity: 0.5'] * len(row)
+
+            else:
+                return ['color: '] * len(row)
+
     def load_data():
         try:
             url = f"{JSON_SERVER}/1x/"
             response = requests.request("GET", url, headers={}, data={})
 
             if response.status_code == 200:
-                # print(response.text)
                 data = response.json()
 
                 total_data = len(data)
@@ -65,6 +96,8 @@ with st.empty():
                                 "team1",
                                 "team2",
                                 "score",
+                                "team1_score",
+                                "team2_score",
                                 "h1_score",
                                 "time_match",
                                 "add_time",
@@ -76,7 +109,7 @@ with st.empty():
                                 "url")
                         ).sort_values(by='time_match', ascending=False)
                         st.dataframe(
-                            df,
+                            df.style.apply(highlight_matches, axis=1),
                             height=(len(data) + 1) * 35 + 3,
                             column_config={
                                 "league": st.column_config.Column(
