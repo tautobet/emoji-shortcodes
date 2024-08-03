@@ -8,6 +8,7 @@ from horus.config import logger, JSON_SERVER
 from schedule import every, run_pending, clear
 from operator import itemgetter
 
+
 def fetch_emojis():
     resp = requests.get(
         'https://raw.githubusercontent.com/omnidan/node-emoji/master/lib/emoji.json')
@@ -64,9 +65,9 @@ with st.empty():
     """
     def highlight_matches(row):
         if row.prediction:
-            if row.half == "1" and float(row.prediction) <= 3 and row.score in ('0 - 0', '0 - 1', '1 - 0'):
+            if row.half == 1 and row.prediction <= 3 and row.score in ('0 - 0', '0 - 1', '1 - 0'):
                 return ['color: #00FF00; opacity: 0.5'] * len(row)
-            if row.half == "2" and float(row.prediction) <= 3 and row.score in ('0 - 0', '0 - 1', '1 - 0', '1 - 1', '2 - 1', '1 - 2', '2 - 0', '0 - 2'):
+            if row.half == 2 and row.prediction <= 3 and row.score in ('0 - 1', '1 - 0', '1 - 1', '2 - 1', '1 - 2', '2 - 0', '0 - 2'):
                 return ['color: #00FF00; opacity: 0.5'] * len(row)
 
             else:
