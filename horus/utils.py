@@ -2,12 +2,12 @@ import json
 import re
 import math
 import asyncio
-from datetime import datetime
 from horus.enums import Game, RISKS, BetTime
 import horus.apis as apis
 from dateutil.parser import parse, parserinfo
 from horus.config import X8_LIVE_FOOTBALL, X8_BASE_URL, TEMP_FOLDER, logger
 from operator import itemgetter
+
 
 class MyParser(parserinfo):
     def __init__(self):
@@ -1239,23 +1239,6 @@ def fetch_matches_data():
     #     if len(live_matches) > 0:
     #         utils.write_json(live_matches)
     asyncio.run(compare_matches(last_matches, live_matches))
-
-
-def convert_data_types(data):
-    converted_data = []
-    for item in data:
-        converted_item = {}
-        for key, value in item.items():
-            if isinstance(value, str) and value.isdigit():
-                converted_item[key] = int(value)
-            elif isinstance(value, list):
-                converted_item[key] = value
-            elif isinstance(value, str) and value.replace(".", "", 1).isdigit():
-                converted_item[key] = float(value)
-            else:
-                converted_item[key] = value
-        converted_data.append(converted_item)
-    return converted_data
 
 
 def delete_ended_matches():

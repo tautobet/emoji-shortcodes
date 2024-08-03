@@ -4,9 +4,10 @@ import streamlit as st
 import requests
 import pandas as pd
 from horus import utils
-from horus.config import logger, JSON_SERVER
+from horus.config import logger, JSON_SERVER_BASE_URL
 from schedule import every, run_pending, clear
 from operator import itemgetter
+from horus.json_server import JsonServerProcessor
 
 
 def fetch_emojis():
@@ -75,12 +76,11 @@ with st.empty():
 
     def load_data():
         try:
-            url = f"{JSON_SERVER}/1x/"
-            response = requests.request("GET", url, headers={}, data={})
-
-            if response.status_code == 200:
-                data = response.json()
-                data = utils.convert_data_types(data)
+            # url = f"{JSON_SERVER_BASE_URL}/1x/"
+            # response = requests.request("GET", url, headers={}, data={})
+            res = JsonServerProcessor(source='1x', params={}).get_all_matches()
+            if res.get('success'):
+                data = res.get('data') or []
                 data = utils.sort_json(data, keys=itemgetter('half', 'time_second'))
                 total_data = len(data)
                 count_data = 0
