@@ -79,7 +79,7 @@ with st.empty():
             response = requests.request("GET", url, headers={}, data={})
 
             if response.status_code == 200:
-                data = response.json()
+                data = utils.convert_data_types(response.json())
                 data = utils.sort_json(data, keys=itemgetter('half', 'time_second'))
                 total_data = len(data)
                 count_data = 0
