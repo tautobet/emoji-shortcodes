@@ -81,7 +81,7 @@ with st.empty():
             res = JsonServerProcessor(source='1x', params={'skip_convert_data_types': True}).get_all_matches()
             if res.get('success'):
                 data = res.get('data') or []
-                data = utils.sort_json(data, keys=itemgetter('half', 'time_second'))
+                data = utils.sort_json(data, keys=itemgetter('half', 'time_match'))
                 total_data = len(data)
                 count_data = 0
                 while total_data > count_data:
