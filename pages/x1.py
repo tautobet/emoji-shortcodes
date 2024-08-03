@@ -66,9 +66,9 @@ with st.empty():
     """
     def highlight_matches(row):
         if row.prediction:
-            if row.half == 1 and row.prediction <= 3 and row.score in ('0 - 0', '0 - 1', '1 - 0'):
+            if row.half == "1" and float(row.prediction) <= 3 and row.score in ('0 - 0', '0 - 1', '1 - 0'):
                 return ['color: #00FF00; opacity: 0.5'] * len(row)
-            if row.half == 2 and row.prediction <= 3 and row.score in ('0 - 1', '1 - 0', '1 - 1', '2 - 1', '1 - 2', '2 - 0', '0 - 2'):
+            if row.half == "2" and float(row.prediction) <= 3 and row.score in ('0 - 1', '1 - 0', '1 - 1', '2 - 1', '1 - 2', '2 - 0', '0 - 2'):
                 return ['color: #00FF00; opacity: 0.5'] * len(row)
 
             else:
@@ -78,7 +78,7 @@ with st.empty():
         try:
             # url = f"{JSON_SERVER_BASE_URL}/1x/"
             # response = requests.request("GET", url, headers={}, data={})
-            res = JsonServerProcessor(source='1x', params={}).get_all_matches()
+            res = JsonServerProcessor(source='1x', params={'skip_convert_data_types': True}).get_all_matches()
             if res.get('success'):
                 data = res.get('data') or []
                 data = utils.sort_json(data, keys=itemgetter('half', 'time_second'))
@@ -141,17 +141,17 @@ with st.empty():
                                 ),
                                 "prediction": st.column_config.NumberColumn(
                                     label="Pre",
-                                    format="%.1f".center(30),
+                                    format="%.1f",
                                     width="small"
                                 ),
                                 "h2_prediction": st.column_config.NumberColumn(
                                     label="H2 Pre",
-                                    format="%.1f".center(30),
+                                    format="%.1f",
                                     width="small"
                                 ),
                                 "cur_prediction": st.column_config.NumberColumn(
                                     label="Cur Pre",
-                                    format="%.1f".center(30),
+                                    format="%.1f",
                                     width="small"
                                 ),
                                 "scores": st.column_config.TextColumn(

@@ -35,7 +35,7 @@ class JsonServerProcessor(object):
             if response.status_code == 200:
                 data = {
                     'success': True,
-                    'data'   : convert_data_types(response.json()),
+                    'data'   : convert_data_types(response.json()) if not self.params.get('skip_convert_data_types') else response.json(),
                 }
                 return data
             else:
