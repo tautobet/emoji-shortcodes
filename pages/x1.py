@@ -95,11 +95,10 @@ with st.empty():
                                 "league",
                                 "team1",
                                 "team2",
-                                "score",
                                 "h1_score",
-                                "time_match",
-                                "add_time",
                                 "half",
+                                "time_match",
+                                "score",
                                 "prediction",
                                 "h2_prediction",
                                 "cur_prediction",
@@ -122,24 +121,20 @@ with st.empty():
                                     label="T2",
                                     width="small"
                                 ),
-                                "score": st.column_config.TextColumn(
-                                    label="Score",
-                                    width="small"
-                                ),
                                 "h1_score": st.column_config.TextColumn(
                                     label="H1 Score",
+                                    width="small"
+                                ),
+                                "half": st.column_config.Column(
+                                    label="Half",
                                     width="small"
                                 ),
                                 "time_match": st.column_config.Column(
                                     label="Time",
                                     width="small"
                                 ),
-                                "add_time": st.column_config.Column(
-                                    label="ET",
-                                    width="small"
-                                ),
-                                "half": st.column_config.Column(
-                                    label="Half",
+                                "score": st.column_config.TextColumn(
+                                    label="Score",
                                     width="small"
                                 ),
                                 "prediction": st.column_config.NumberColumn(
