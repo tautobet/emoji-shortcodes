@@ -67,9 +67,6 @@ with st.empty():
     def highlight_matches(row):
         if row.prediction:
             if row.half == "1" and float(row.prediction) <= 3 and row.score in ('0 - 0', '0 - 1', '1 - 0'):
-                print(f"row           : {row}")
-                print(f"row.scores    : {row.scores}")
-                print(f"row.time_match: {row.time_match}")
                 if ':' in str(row.scores) and ':' in str(row.time_match):
                     if utils.convert_timematch_to_seconds(row.time_match) - utils.convert_timematch_to_seconds(row.scores.split(',')[0]) <= 720:
                         return ['color: #FFA500; opacity: 0.5'] * len(row)
