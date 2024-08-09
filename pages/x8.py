@@ -5,7 +5,7 @@ import requests
 import pandas as pd
 
 from horus import utils
-from horus.config import logger, JSON_SERVER
+from horus.config import logger, JSON_SERVER_BASE_URL
 from schedule import every, run_pending, clear
 
 
@@ -42,7 +42,7 @@ page_load()
 with st.empty():
     def load_data():
         try:
-            url = f"{JSON_SERVER}/8x/"
+            url = f"{JSON_SERVER_BASE_URL}/8x/"
             response = requests.request("GET", url, headers={}, data={})
 
             if response.status_code == 200:
